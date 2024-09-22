@@ -1,10 +1,15 @@
-# Use a base image for R and RStudio
+# Use the RStudio image from the Rocker Project
 FROM rocker/rstudio:latest
 
-# Switch to root to install additional packages
+# Switch to root to set permissions
 USER root
 
-# Install dependencies (example packages; modify as needed)
+# Ensure that /var/run/s6 exists and is writable by any user
+RUN mkdir -p /var/run/s6 /etc/s6 \
+    && chown -R 1000:0 /var/run/s6 /etc/s6 \
+    && chmod -R g=u /var/run/s6 /etc/s6
+
+# Install necessary dependencies (if any)
 RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libssl-dev \
@@ -12,22 +17,15 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user with an explicit UID/GID.
-# OpenShift assigns random user IDs, but you still need a non-root user.
-RUN useradd -m rstudio-user \
-    && chown -R rstudio-user /home/rstudio-user
+# Ensure the non-root user has ownership of home directories and important paths
+RUN chown -R 1000:0 /home/rstudio /var/lib/rstudio-server \
+    && chmod -R g=u /home/rstudio /var/lib/rstudio-server
 
-# Expose port for RStudio Server (8787 by default)
+# Expose RStudio server port
 EXPOSE 8787
-
-# Make sure that RStudio Server works in an OpenShift environment
-# OpenShift runs containers as a random user in the 1000 range,
-# so files must be group-readable and writable by others.
-RUN chgrp -R 0 /home/rstudio-user && \
-    chmod -R g=u /home/rstudio-user
 
 # Switch back to non-root user
 USER 1000
 
-# Start RStudio Server
+# Start RStudio Server using the default CMD from the base image
 CMD ["/init"]
