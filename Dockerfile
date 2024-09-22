@@ -17,5 +17,5 @@ EXPOSE 8787
 # Switch to a non-root user (OpenShift uses random UIDs)
 USER 1000
 
-# Start RStudio Server using the default CMD from the base image
-CMD ["/init"]
+# Start RStudio Server using the default command from the base image
+ENTRYPOINT ["/init"]
